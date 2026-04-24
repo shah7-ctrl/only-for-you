@@ -63,11 +63,13 @@ function updateButtons() {
 
 function stopAllExcept(video) {
   videos.forEach(v => {
+
     if (v === video) return;
 
     v.pause();
     v.currentTime = 0;
     v.muted = true;
+
   });
 }
 
@@ -77,7 +79,8 @@ function preloadNext(video) {
 
   if (!nextReel) return;
 
-  const nextVideo = nextReel.querySelector("video");
+  const nextVideo =
+    nextReel.querySelector("video");
 
   if (nextVideo) {
     nextVideo.preload = "auto";
@@ -85,6 +88,7 @@ function preloadNext(video) {
 }
 
 function setActiveVideo(video) {
+
   if (!video) return;
 
   activeVideo = video;
@@ -101,6 +105,7 @@ function setActiveVideo(video) {
 }
 
 function getMostVisibleVideo() {
+
   let best = null;
   let maxVisible = 0;
 
@@ -113,8 +118,10 @@ function getMostVisibleVideo() {
       Math.max(rect.top, 0);
 
     const bottom =
-      Math.min(rect.bottom,
-      window.innerHeight);
+      Math.min(
+        rect.bottom,
+        window.innerHeight
+      );
 
     const visible =
       Math.max(0, bottom - top);
@@ -137,6 +144,11 @@ let scrollTimer = null;
 
 feed.addEventListener("scroll", () => {
 
+  /* Immediately pause old reel while moving */
+  if (activeVideo) {
+    activeVideo.pause();
+  }
+
   clearTimeout(scrollTimer);
 
   scrollTimer = setTimeout(() => {
@@ -144,14 +156,11 @@ feed.addEventListener("scroll", () => {
     const target =
       getMostVisibleVideo();
 
-    if (
-      target &&
-      target !== activeVideo
-    ) {
+    if (target) {
       setActiveVideo(target);
     }
 
-  }, 120);
+  }, 90);
 
 });
 
@@ -162,6 +171,7 @@ feed.addEventListener("scroll", () => {
 buttons.forEach(btn => {
 
   btn.addEventListener("click", e => {
+
     e.stopPropagation();
 
     globalMuted = !globalMuted;
@@ -177,6 +187,7 @@ buttons.forEach(btn => {
       document.querySelector(".tapHint");
 
     if (hint) hint.remove();
+
   });
 
 });
@@ -189,13 +200,11 @@ videos.forEach(video => {
 
   let timer = null;
   let longPressed = false;
-  let moved = false;
   let startY = 0;
 
   const touchStart = (e) => {
 
     longPressed = false;
-    moved = false;
 
     startY =
       e.touches[0].clientY;
@@ -218,7 +227,6 @@ videos.forEach(video => {
       e.touches[0].clientY;
 
     if (Math.abs(y - startY) > 25) {
-      moved = true;
       clearTimeout(timer);
     }
 
@@ -234,12 +242,11 @@ videos.forEach(video => {
         video.play().catch(() => {});
       }
 
-      return;
     }
 
   };
 
-  /* Mobile */
+  /* MOBILE */
   video.addEventListener(
     "touchstart",
     touchStart,
@@ -264,24 +271,26 @@ videos.forEach(video => {
     { passive:true }
   );
 
-  /* Desktop hold */
+  /* DESKTOP HOLD */
   video.addEventListener(
     "mousedown",
     () => {
-      if (video === activeVideo)
+      if (video === activeVideo) {
         video.pause();
+      }
     }
   );
 
   video.addEventListener(
     "mouseup",
     () => {
-      if (video === activeVideo)
+      if (video === activeVideo) {
         video.play().catch(() => {});
+      }
     }
   );
 
-  /* Block menu */
+  /* BLOCK MENU */
   video.addEventListener(
     "contextmenu",
     e => e.preventDefault()
@@ -294,7 +303,9 @@ videos.forEach(video => {
 ----------------------------- */
 
 window.addEventListener("load", () => {
+
   if (videos[0]) {
     setActiveVideo(videos[0]);
   }
+
 });
