@@ -1,19 +1,24 @@
+// script.js
+
 const feed = document.getElementById("feed");
 
 /*
-Global sound state:
-true  = all current/next videos unmuted
-false = all current/next videos muted
+Global sound state
+true  = muted
+false = unmuted
 Starts muted
 */
 let globalMuted = true;
 
+/*
+Build reels
+*/
 reels.forEach((item, index) => {
   const reel = document.createElement("section");
   reel.className = "reel";
 
   reel.innerHTML = `
-    <div class="topBadge">For My Ashu ❤️</div>
+    <div class="topBadge">For Meri Jaan Ashu ❤️</div>
 
     <video
       ${globalMuted ? "muted" : ""}
@@ -27,7 +32,7 @@ reels.forEach((item, index) => {
     <div class="overlay">
       ${
         index === 0
-          ? `<div class="tapHint" style="margin-top:8px;font-size:14px;">
+          ? `<div class="tapHint">
                Tap video for sound 🔊
              </div>`
           : ""
@@ -40,24 +45,54 @@ reels.forEach((item, index) => {
 
 const videos = document.querySelectorAll("video");
 
+/*
+Apply mute state to all videos
+*/
 function applyGlobalMuteState() {
   videos.forEach(video => {
     video.muted = globalMuted;
   });
 }
 
+/*
+Get currently visible video
+*/
+function getActiveVideo() {
+  let active = null;
+
+  videos.forEach(video => {
+    const rect = video.getBoundingClientRect();
+
+    if (
+      rect.top < window.innerHeight * 0.5 &&
+      rect.bottom > window.innerHeight * 0.5
+    ) {
+      active = video;
+    }
+  });
+
+  return active;
+}
+
+/*
+Autoplay visible reel only
+Pause hidden reels
+Preload next reel
+*/
 const observer = new IntersectionObserver(entries => {
   entries.forEach(entry => {
     const video = entry.target;
 
     if (entry.isIntersecting) {
       video.muted = globalMuted;
-      video.play();
 
-      const next = video.closest(".reel").nextElementSibling;
+      video.play().catch(() => {});
 
-      if (next) {
-        const nextVideo = next.querySelector("video");
+      const nextReel = video.closest(".reel").nextElementSibling;
+
+      if (nextReel) {
+        const nextVideo = nextReel.querySelector("video");
+
         if (nextVideo) {
           nextVideo.preload = "auto";
           nextVideo.muted = globalMuted;
@@ -73,18 +108,65 @@ const observer = new IntersectionObserver(entries => {
   threshold: 0.7
 });
 
+/*
+Controls:
+Tap = mute/unmute
+Long press = pause
+Release = resume
+*/
 videos.forEach(video => {
+
   observer.observe(video);
 
+  let pressTimer = null;
+  let longPressed = false;
+
+  const startPress = () => {
+    longPressed = false;
+
+    pressTimer = setTimeout(() => {
+      longPressed = true;
+      video.pause();
+    }, 300);
+  };
+
+  const endPress = () => {
+    clearTimeout(pressTimer);
+
+    if (longPressed) {
+      video.play().catch(() => {});
+    }
+  };
+
+  /*
+  Tap for sound toggle
+  Ignore if it was long press
+  */
   video.addEventListener("click", () => {
+    if (longPressed) return;
+
     globalMuted = !globalMuted;
     applyGlobalMuteState();
 
-    const active = document.querySelector("video:hover") || video;
-    active.play();
+    const active = getActiveVideo() || video;
+    active.play().catch(() => {});
 
-    // remove first hint permanently after first tap
     const hint = document.querySelector(".tapHint");
     if (hint) hint.remove();
   });
+
+  /*
+  Mobile
+  */
+  video.addEventListener("touchstart", startPress);
+  video.addEventListener("touchend", endPress);
+  video.addEventListener("touchcancel", endPress);
+
+  /*
+  Desktop
+  */
+  video.addEventListener("mousedown", startPress);
+  video.addEventListener("mouseup", endPress);
+  video.addEventListener("mouseleave", endPress);
+
 });
