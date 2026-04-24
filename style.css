@@ -9,7 +9,6 @@ body{
   width:100%;
   height:100%;
   overflow:hidden;
-  overscroll-behavior:none;
 }
 
 body{
@@ -17,7 +16,7 @@ body{
   font-family:Arial,sans-serif;
 }
 
-/* Main vertical feed */
+/* Main feed */
 #feed{
   height:100vh;
   overflow-y:auto;
@@ -28,68 +27,77 @@ body{
   scroll-behavior:smooth;
 
   overscroll-behavior-y:contain;
-
-  -webkit-overflow-scrolling:auto;
+  -webkit-overflow-scrolling:touch;
 }
 
-/* Each reel = full screen */
+/* Each reel */
 .reel{
   height:100vh;
+  min-height:100vh;
   position:relative;
 
   scroll-snap-align:start;
   scroll-snap-stop:always;
 
   background:#000;
+  overflow:hidden;
 }
 
-/* Video */
+/* Video fixed properly */
 video{
+  position:absolute;
+  inset:0;
+
   width:100%;
   height:100%;
+
   object-fit:cover;
+  object-position:center center;
+
   display:block;
 
   user-select:none;
   -webkit-user-select:none;
   -webkit-touch-callout:none;
+  -webkit-user-drag:none;
 }
 
-/* Bottom text area */
+/* Bottom overlay */
 .overlay{
   position:absolute;
   left:20px;
   right:20px;
-  bottom:40px;
+  bottom:28px;
 
   color:#fff;
   z-index:10;
 
-  text-shadow:0 0 10px rgba(0,0,0,0.85);
+  text-shadow:0 0 10px rgba(0,0,0,.85);
 }
 
-/* First screen sound hint */
+/* Tap hint */
 .tapHint{
   display:inline-block;
   padding:8px 12px;
 
   font-size:14px;
-  border-radius:20px;
+  line-height:1.2;
 
-  background:rgba(0,0,0,0.45);
+  border-radius:20px;
+  background:rgba(0,0,0,.45);
 }
 
 /* Optional title */
 .title{
   font-size:24px;
-  font-weight:bold;
+  font-weight:700;
   margin-bottom:8px;
 }
 
 /* Optional caption */
 .caption{
   font-size:16px;
-  opacity:0.95;
+  opacity:.95;
 }
 
 /* Top badge */
@@ -104,7 +112,7 @@ video{
   color:#fff;
   font-size:14px;
 
-  background:rgba(0,0,0,0.45);
+  background:rgba(0,0,0,.45);
 
   z-index:10;
 }

@@ -6,13 +6,12 @@ const feed = document.getElementById("feed");
 Global sound state
 true  = muted
 false = unmuted
-Starts muted
 */
 let globalMuted = true;
 
-/*
-Build reels
-*/
+/* --------------------------
+   BUILD REELS
+-------------------------- */
 reels.forEach((item, index) => {
   const reel = document.createElement("section");
   reel.className = "reel";
@@ -24,7 +23,10 @@ reels.forEach((item, index) => {
       ${globalMuted ? "muted" : ""}
       loop
       playsinline
+      webkit-playsinline
       preload="${index < 2 ? "auto" : "metadata"}"
+      controlslist="nodownload noplaybackrate nofullscreen"
+      disablepictureinpicture
     >
       <source src="${item.file}" type="video/mp4">
     </video>
@@ -32,9 +34,7 @@ reels.forEach((item, index) => {
     <div class="overlay">
       ${
         index === 0
-          ? `<div class="tapHint">
-               Tap video for sound 🔊
-             </div>`
+          ? `<div class="tapHint">Tap video for sound 🔊</div>`
           : ""
       }
     </div>
@@ -45,128 +45,176 @@ reels.forEach((item, index) => {
 
 const videos = document.querySelectorAll("video");
 
-/*
-Apply mute state to all videos
-*/
+/* --------------------------
+   GLOBAL ACTIVE VIDEO
+-------------------------- */
+let activeVideo = null;
+
+/* --------------------------
+   HELPERS
+-------------------------- */
+
 function applyGlobalMuteState() {
   videos.forEach(video => {
     video.muted = globalMuted;
   });
 }
 
-/*
-Get currently visible video
-*/
-function getActiveVideo() {
-  let active = null;
+function stopAllVideos() {
+  videos.forEach(video => {
+    video.pause();
+  });
+}
+
+function setActiveVideo(video) {
+  activeVideo = video;
+
+  videos.forEach(v => {
+    if (v === video) {
+      v.muted = globalMuted;
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+      v.currentTime = 0;
+      v.muted = true;   // critical fix
+    }
+  });
+
+  preloadNext(video);
+}
+
+function preloadNext(video) {
+  const nextReel = video.closest(".reel").nextElementSibling;
+
+  if (!nextReel) return;
+
+  const nextVideo = nextReel.querySelector("video");
+
+  if (nextVideo) {
+    nextVideo.preload = "auto";
+  }
+}
+
+function getCenteredVideo() {
+  let found = null;
 
   videos.forEach(video => {
     const rect = video.getBoundingClientRect();
 
     if (
-      rect.top < window.innerHeight * 0.5 &&
-      rect.bottom > window.innerHeight * 0.5
+      rect.top < window.innerHeight * 0.55 &&
+      rect.bottom > window.innerHeight * 0.45
     ) {
-      active = video;
+      found = video;
     }
   });
 
-  return active;
+  return found;
 }
 
-/*
-Autoplay visible reel only
-Pause hidden reels
-Preload next reel
-*/
+/* --------------------------
+   INTERSECTION OBSERVER
+-------------------------- */
+
 const observer = new IntersectionObserver(entries => {
+
   entries.forEach(entry => {
-    const video = entry.target;
 
     if (entry.isIntersecting) {
-      video.muted = globalMuted;
-
-      video.play().catch(() => {});
-
-      const nextReel = video.closest(".reel").nextElementSibling;
-
-      if (nextReel) {
-        const nextVideo = nextReel.querySelector("video");
-
-        if (nextVideo) {
-          nextVideo.preload = "auto";
-          nextVideo.muted = globalMuted;
-        }
-      }
-
-    } else {
-      video.pause();
-      video.currentTime = 0;
+      setActiveVideo(entry.target);
     }
+
   });
+
 }, {
-  threshold: 0.7
+  threshold: 0.8
 });
 
-/*
-Controls:
-Tap = mute/unmute
-Long press = pause
-Release = resume
-*/
+videos.forEach(video => observer.observe(video));
+
+/* --------------------------
+   LONG PRESS + TAP
+-------------------------- */
+
 videos.forEach(video => {
 
-  observer.observe(video);
-
-  let pressTimer = null;
+  let timer = null;
   let longPressed = false;
 
-  const startPress = () => {
+  const startPress = (e) => {
+    e.preventDefault();
+
     longPressed = false;
 
-    pressTimer = setTimeout(() => {
+    timer = setTimeout(() => {
       longPressed = true;
-      video.pause();
-    }, 300);
+
+      if (video === activeVideo) {
+        video.pause();
+      }
+
+    }, 320);
   };
 
-  const endPress = () => {
-    clearTimeout(pressTimer);
+  const endPress = (e) => {
+    e.preventDefault();
+
+    clearTimeout(timer);
 
     if (longPressed) {
-      video.play().catch(() => {});
+      if (video === activeVideo) {
+        stopAllVideos();                 // critical fix
+        video.muted = globalMuted;
+        video.play().catch(() => {});
+      }
     }
   };
 
-  /*
-  Tap for sound toggle
-  Ignore if it was long press
-  */
-  video.addEventListener("click", () => {
+  const tapToggle = () => {
+
     if (longPressed) return;
 
     globalMuted = !globalMuted;
-    applyGlobalMuteState();
 
-    const active = getActiveVideo() || video;
-    active.play().catch(() => {});
+    if (activeVideo) {
+      setActiveVideo(activeVideo);
+    }
 
     const hint = document.querySelector(".tapHint");
     if (hint) hint.remove();
-  });
+  };
 
-  /*
-  Mobile
-  */
-  video.addEventListener("touchstart", startPress);
-  video.addEventListener("touchend", endPress);
-  video.addEventListener("touchcancel", endPress);
+  /* Mobile */
+  video.addEventListener(
+    "touchstart",
+    startPress,
+    { passive:false }
+  );
 
-  /*
-  Desktop
-  */
+  video.addEventListener(
+    "touchend",
+    endPress,
+    { passive:false }
+  );
+
+  video.addEventListener(
+    "touchcancel",
+    endPress,
+    { passive:false }
+  );
+
+  /* Desktop */
   video.addEventListener("mousedown", startPress);
   video.addEventListener("mouseup", endPress);
   video.addEventListener("mouseleave", endPress);
+
+  /* Tap */
+  video.addEventListener("click", tapToggle);
+
+  /* Block context menu */
+  video.addEventListener(
+    "contextmenu",
+    e => e.preventDefault()
+  );
 
 });
