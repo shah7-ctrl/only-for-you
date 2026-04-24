@@ -2,16 +2,15 @@
 
 const feed = document.getElementById("feed");
 
-/*
-Global sound state
-true  = muted
-false = unmuted
-*/
+/* ---------------------------------
+   GLOBAL STATE
+--------------------------------- */
 let globalMuted = true;
+let activeVideo = null;
 
-/* --------------------------
+/* ---------------------------------
    BUILD REELS
--------------------------- */
+--------------------------------- */
 reels.forEach((item, index) => {
   const reel = document.createElement("section");
   reel.className = "reel";
@@ -20,7 +19,7 @@ reels.forEach((item, index) => {
     <div class="topBadge">For Meri Jaan Ashu ❤️</div>
 
     <video
-      ${globalMuted ? "muted" : ""}
+      muted
       loop
       playsinline
       webkit-playsinline
@@ -45,28 +44,29 @@ reels.forEach((item, index) => {
 
 const videos = document.querySelectorAll("video");
 
-/* --------------------------
-   GLOBAL ACTIVE VIDEO
--------------------------- */
-let activeVideo = null;
-
-/* --------------------------
+/* ---------------------------------
    HELPERS
--------------------------- */
-
-function applyGlobalMuteState() {
-  videos.forEach(video => {
-    video.muted = globalMuted;
-  });
-}
+--------------------------------- */
 
 function stopAllVideos() {
   videos.forEach(video => {
     video.pause();
+    video.currentTime = 0;
+    video.muted = true;
   });
 }
 
+function preloadNext(video) {
+  const nextReel = video.closest(".reel")?.nextElementSibling;
+  if (!nextReel) return;
+
+  const nextVideo = nextReel.querySelector("video");
+  if (nextVideo) nextVideo.preload = "auto";
+}
+
 function setActiveVideo(video) {
+  if (!video) return;
+
   activeVideo = video;
 
   videos.forEach(v => {
@@ -76,145 +76,152 @@ function setActiveVideo(video) {
     } else {
       v.pause();
       v.currentTime = 0;
-      v.muted = true;   // critical fix
+      v.muted = true;
     }
   });
 
   preloadNext(video);
 }
 
-function preloadNext(video) {
-  const nextReel = video.closest(".reel").nextElementSibling;
-
-  if (!nextReel) return;
-
-  const nextVideo = nextReel.querySelector("video");
-
-  if (nextVideo) {
-    nextVideo.preload = "auto";
-  }
-}
-
-function getCenteredVideo() {
-  let found = null;
+function getMostVisibleVideo() {
+  let best = null;
+  let maxVisible = 0;
 
   videos.forEach(video => {
     const rect = video.getBoundingClientRect();
 
-    if (
-      rect.top < window.innerHeight * 0.55 &&
-      rect.bottom > window.innerHeight * 0.45
-    ) {
-      found = video;
+    const top = Math.max(rect.top, 0);
+    const bottom = Math.min(rect.bottom, window.innerHeight);
+    const visible = Math.max(0, bottom - top);
+
+    if (visible > maxVisible) {
+      maxVisible = visible;
+      best = video;
     }
   });
 
-  return found;
+  return best;
 }
 
-/* --------------------------
-   INTERSECTION OBSERVER
--------------------------- */
+/* ---------------------------------
+   SCROLL DETECT ACTIVE REEL
+--------------------------------- */
 
-const observer = new IntersectionObserver(entries => {
+let scrollTimer;
 
-  entries.forEach(entry => {
+feed.addEventListener("scroll", () => {
+  clearTimeout(scrollTimer);
 
-    if (entry.isIntersecting) {
-      setActiveVideo(entry.target);
+  scrollTimer = setTimeout(() => {
+    const target = getMostVisibleVideo();
+
+    if (target && target !== activeVideo) {
+      setActiveVideo(target);
     }
-
-  });
-
-}, {
-  threshold: 0.8
+  }, 120);
 });
 
-videos.forEach(video => observer.observe(video));
+/* first reel */
+window.addEventListener("load", () => {
+  if (videos[0]) setActiveVideo(videos[0]);
+});
 
-/* --------------------------
-   LONG PRESS + TAP
--------------------------- */
+/* ---------------------------------
+   TOUCH / CLICK CONTROLS
+--------------------------------- */
 
 videos.forEach(video => {
 
-  let timer = null;
+  let pressTimer = null;
   let longPressed = false;
+  let moved = false;
+  let startY = 0;
 
-  const startPress = (e) => {
-    e.preventDefault();
-
+  /* TOUCH START */
+  const touchStart = (e) => {
     longPressed = false;
+    moved = false;
 
-    timer = setTimeout(() => {
+    startY = e.touches[0].clientY;
+
+    pressTimer = setTimeout(() => {
       longPressed = true;
 
       if (video === activeVideo) {
-        video.pause();
+        video.pause(); // pause only after true hold
       }
 
-    }, 320);
+    }, 450); // longer delay avoids tap trigger
   };
 
-  const endPress = (e) => {
-    e.preventDefault();
+  /* TOUCH MOVE = user scrolling */
+  const touchMove = (e) => {
+    const currentY = e.touches[0].clientY;
 
-    clearTimeout(timer);
-
-    if (longPressed) {
-      if (video === activeVideo) {
-        stopAllVideos();                 // critical fix
-        video.muted = globalMuted;
-        video.play().catch(() => {});
-      }
+    if (Math.abs(currentY - startY) > 18) {
+      moved = true;
+      clearTimeout(pressTimer); // cancel long press if moving
     }
   };
 
-  const tapToggle = () => {
+  /* TOUCH END */
+  const touchEnd = () => {
+    clearTimeout(pressTimer);
 
-    if (longPressed) return;
+    /* if actual long press */
+    if (longPressed) {
+      if (video === activeVideo) {
+        video.play().catch(() => {});
+      }
+      return;
+    }
 
+    /* if scrolling movement happened */
+    if (moved) return;
+
+    /* normal tap = sound toggle only */
     globalMuted = !globalMuted;
 
     if (activeVideo) {
-      setActiveVideo(activeVideo);
+      activeVideo.muted = globalMuted;
+      activeVideo.play().catch(() => {});
     }
 
     const hint = document.querySelector(".tapHint");
     if (hint) hint.remove();
   };
 
-  /* Mobile */
-  video.addEventListener(
-    "touchstart",
-    startPress,
-    { passive:false }
-  );
+  /* MOBILE */
+  video.addEventListener("touchstart", touchStart, { passive:true });
+  video.addEventListener("touchmove", touchMove, { passive:true });
+  video.addEventListener("touchend", touchEnd, { passive:true });
+  video.addEventListener("touchcancel", touchEnd, { passive:true });
 
-  video.addEventListener(
-    "touchend",
-    endPress,
-    { passive:false }
-  );
+  /* DESKTOP CLICK */
+  video.addEventListener("click", () => {
+    globalMuted = !globalMuted;
 
-  video.addEventListener(
-    "touchcancel",
-    endPress,
-    { passive:false }
-  );
+    if (activeVideo) {
+      activeVideo.muted = globalMuted;
+      activeVideo.play().catch(() => {});
+    }
 
-  /* Desktop */
-  video.addEventListener("mousedown", startPress);
-  video.addEventListener("mouseup", endPress);
-  video.addEventListener("mouseleave", endPress);
+    const hint = document.querySelector(".tapHint");
+    if (hint) hint.remove();
+  });
 
-  /* Tap */
-  video.addEventListener("click", tapToggle);
+  /* DESKTOP HOLD */
+  video.addEventListener("mousedown", () => {
+    if (video === activeVideo) video.pause();
+  });
 
-  /* Block context menu */
-  video.addEventListener(
-    "contextmenu",
-    e => e.preventDefault()
-  );
+  video.addEventListener("mouseup", () => {
+    if (video === activeVideo) video.play().catch(() => {});
+  });
+
+  /* disable menu */
+  video.addEventListener("contextmenu", e => {
+    e.preventDefault();
+  });
 
 });
