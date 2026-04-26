@@ -26,9 +26,14 @@ reels.forEach((item, index) => {
   reel.className = "reel";
 
   reel.innerHTML = `
-    <div class="topBadge">For My Ashu ❤️</div>
+    <div class="topBadge">For My Ashu</div>
 
-    <button class="soundBtn" type="button">🔇</button>
+    <button
+      class="soundBtn"
+      type="button"
+    >
+      🔇
+    </button>
 
     <button
       class="shareBtn"
@@ -51,8 +56,16 @@ reels.forEach((item, index) => {
       loop
       playsinline
       webkit-playsinline
-      preload="${index < 2 ? "auto" : "metadata"}"
-      controlslist="nodownload noplaybackrate nofullscreen"
+      preload="${
+        index < 2
+          ? "auto"
+          : "metadata"
+      }"
+      controlslist="
+        nodownload
+        noplaybackrate
+        nofullscreen
+      "
       disablepictureinpicture
     >
       <source
@@ -64,9 +77,11 @@ reels.forEach((item, index) => {
     <div class="overlay">
       ${
         index === 0
-          ? `<div class="tapHint">
-               Tap 🔇 for sound
-             </div>`
+          ? `
+            <div class="tapHint">
+              Tap 🔇 for sound
+            </div>
+          `
           : ""
       }
     </div>
@@ -80,26 +95,38 @@ reels.forEach((item, index) => {
    DOM SELECTORS
 ------------------------- */
 const videos =
-  document.querySelectorAll("video");
+  document.querySelectorAll(
+    "video"
+  );
 
 const soundButtons =
-  document.querySelectorAll(".soundBtn");
+  document.querySelectorAll(
+    ".soundBtn"
+  );
 
 const shareButtons =
-  document.querySelectorAll(".shareBtn");
+  document.querySelectorAll(
+    ".shareBtn"
+  );
 
 const reactButtons =
-  document.querySelectorAll(".reactBtn");
+  document.querySelectorAll(
+    ".reactBtn"
+  );
 
 /* -------------------------
    HELPERS
 ------------------------- */
 
 function updateSoundButtons() {
+
   soundButtons.forEach(btn => {
     btn.textContent =
-      globalMuted ? "🔇" : "🔊";
+      globalMuted
+        ? "🔇"
+        : "🔊";
   });
+
 }
 
 function stopAllExcept(video) {
@@ -125,10 +152,13 @@ function preloadNext(video) {
   if (!nextReel) return;
 
   const nextVideo =
-    nextReel.querySelector("video");
+    nextReel.querySelector(
+      "video"
+    );
 
   if (nextVideo) {
-    nextVideo.preload = "auto";
+    nextVideo.preload =
+      "auto";
   }
 
 }
@@ -141,13 +171,16 @@ function setActiveVideo(video) {
 
   stopAllExcept(video);
 
-  video.muted = globalMuted;
+  video.muted =
+    globalMuted;
 
-  video.play().catch(() => {});
+  video.play()
+    .catch(() => {});
 
   preloadNext(video);
 
   updateSoundButtons();
+
 }
 
 function getMostVisibleVideo() {
@@ -161,7 +194,10 @@ function getMostVisibleVideo() {
       video.getBoundingClientRect();
 
     const top =
-      Math.max(rect.top, 0);
+      Math.max(
+        rect.top,
+        0
+      );
 
     const bottom =
       Math.min(
@@ -170,42 +206,66 @@ function getMostVisibleVideo() {
       );
 
     const visible =
-      Math.max(0, bottom - top);
+      Math.max(
+        0,
+        bottom - top
+      );
 
-    if (visible > maxVisible) {
-      maxVisible = visible;
+    if (
+      visible >
+      maxVisible
+    ) {
+      maxVisible =
+        visible;
+
       best = video;
     }
 
   });
 
   return best;
+
 }
 
 function removeHint() {
-  const hint =
-    document.querySelector(".tapHint");
 
-  if (hint) hint.remove();
+  const hint =
+    document.querySelector(
+      ".tapHint"
+    );
+
+  if (hint) {
+    hint.remove();
+  }
+
 }
 
 /* -------------------------
    REACTIONS
 ------------------------- */
 
-function burstEmoji(reel, emoji) {
+function burstEmoji(
+  reel,
+  emoji
+) {
 
   const pop =
-    document.createElement("div");
+    document.createElement(
+      "div"
+    );
 
-  pop.className = "emojiBurst";
-  pop.textContent = emoji;
+  pop.className =
+    "emojiBurst";
+
+  pop.textContent =
+    emoji;
 
   reel.appendChild(pop);
 
   setTimeout(() => {
     pop.remove();
   }, 800);
+
 }
 
 function buildEmojiTrays() {
@@ -213,59 +273,74 @@ function buildEmojiTrays() {
   reactButtons.forEach(btn => {
 
     const reel =
-      btn.closest(".reel");
-
-    const tray =
-      document.createElement("div");
-
-    tray.className = "emojiTray";
-
-    emojiList.forEach(emoji => {
-
-      const option =
-        document.createElement("button");
-
-      option.type = "button";
-      option.className =
-        "emojiOption";
-
-      option.textContent =
-        emoji;
-
-      option.addEventListener(
-        "click",
-        e => {
-
-          e.stopPropagation();
-
-          const id =
-            btn.dataset.id;
-
-          localStorage.setItem(
-            "liked_" + id,
-            emoji
-          );
-
-          btn.textContent =
-            emoji;
-
-          tray.classList.remove(
-            "show"
-          );
-
-          burstEmoji(
-            reel,
-            emoji
-          );
-
-        }
+      btn.closest(
+        ".reel"
       );
 
-      tray.appendChild(option);
+    const tray =
+      document.createElement(
+        "div"
+      );
 
-    });
+    tray.className =
+      "emojiTray";
 
-    reel.appendChild(tray);
+    emojiList.forEach(
+      emoji => {
+
+        const option =
+          document.createElement(
+            "button"
+          );
+
+        option.type =
+          "button";
+
+        option.className =
+          "emojiOption";
+
+        option.textContent =
+          emoji;
+
+        option.addEventListener(
+          "click",
+          e => {
+
+            e.stopPropagation();
+
+            const id =
+              btn.dataset.id;
+
+            localStorage.setItem(
+              "liked_" + id,
+              emoji
+            );
+
+            btn.textContent =
+              emoji;
+
+            tray.classList.remove(
+              "show"
+            );
+
+            burstEmoji(
+              reel,
+              emoji
+            );
+
+          }
+        );
+
+        tray.appendChild(
+          option
+        );
+
+      }
+    );
+
+    reel.appendChild(
+      tray
+    );
 
   });
 
@@ -283,8 +358,21 @@ function loadReactions() {
         "liked_" + id
       );
 
-    if (saved) {
-      btn.textContent = saved;
+    /* Ignore old boolean data */
+    if (
+      saved &&
+      saved !== "true" &&
+      saved !== "false"
+    ) {
+
+      btn.textContent =
+        saved;
+
+    } else {
+
+      btn.textContent =
+        "❤️";
+
     }
 
   });
@@ -294,7 +382,9 @@ function loadReactions() {
 function closeAllTrays() {
 
   document
-    .querySelectorAll(".emojiTray")
+    .querySelectorAll(
+      ".emojiTray"
+    )
     .forEach(tray => {
       tray.classList.remove(
         "show"
@@ -309,28 +399,36 @@ function closeAllTrays() {
 
 let scrollTimer = null;
 
-feed.addEventListener("scroll", () => {
+feed.addEventListener(
+  "scroll",
+  () => {
 
-  if (activeVideo) {
-    activeVideo.pause();
-  }
-
-  closeAllTrays();
-
-  clearTimeout(scrollTimer);
-
-  scrollTimer = setTimeout(() => {
-
-    const target =
-      getMostVisibleVideo();
-
-    if (target) {
-      setActiveVideo(target);
+    if (activeVideo) {
+      activeVideo.pause();
     }
 
-  }, 90);
+    closeAllTrays();
 
-});
+    clearTimeout(
+      scrollTimer
+    );
+
+    scrollTimer =
+      setTimeout(() => {
+
+        const target =
+          getMostVisibleVideo();
+
+        if (target) {
+          setActiveVideo(
+            target
+          );
+        }
+
+      }, 90);
+
+  }
+);
 
 /* -------------------------
    SOUND BUTTON
@@ -347,7 +445,9 @@ soundButtons.forEach(btn => {
       globalMuted =
         !globalMuted;
 
-      if (activeVideo) {
+      if (
+        activeVideo
+      ) {
 
         activeVideo.muted =
           globalMuted;
@@ -384,16 +484,21 @@ shareButtons.forEach(btn => {
         ) + 1;
 
       const reelLink =
-        window.location.origin +
-        window.location.pathname +
-        "?video=" + id;
+        window.location
+          .origin +
+        window.location
+          .pathname +
+        "?video=" +
+        id;
 
       const text =
         reelLink;
 
       const url =
         "https://wa.me/918797204760?text=" +
-        encodeURIComponent(text);
+        encodeURIComponent(
+          text
+        );
 
       window.open(
         url,
@@ -418,7 +523,9 @@ reactButtons.forEach(btn => {
       e.stopPropagation();
 
       const reel =
-        btn.closest(".reel");
+        btn.closest(
+          ".reel"
+        );
 
       const tray =
         reel.querySelector(
@@ -443,7 +550,7 @@ reactButtons.forEach(btn => {
 
 });
 
-/* close trays when tapping outside */
+/* Close tray outside tap */
 document.addEventListener(
   "click",
   () => {
@@ -458,113 +565,148 @@ document.addEventListener(
 videos.forEach(video => {
 
   let timer = null;
-  let longPressed = false;
+  let longPressed =
+    false;
   let startY = 0;
 
-  const touchStart = e => {
+  const touchStart =
+    e => {
 
-    longPressed = false;
+      longPressed =
+        false;
 
-    startY =
-      e.touches[0].clientY;
+      startY =
+        e.touches[0]
+          .clientY;
 
-    timer = setTimeout(() => {
+      timer =
+        setTimeout(
+          () => {
 
-      longPressed = true;
+            longPressed =
+              true;
 
-      if (
-        video === activeVideo
-      ) {
-        video.pause();
-      }
+            if (
+              video ===
+              activeVideo
+            ) {
+              video.pause();
+            }
 
-    }, 420);
+          },
+          420
+        );
 
-  };
+    };
 
-  const touchMove = e => {
+  const touchMove =
+    e => {
 
-    const y =
-      e.touches[0].clientY;
-
-    if (
-      Math.abs(
-        y - startY
-      ) > 25
-    ) {
-      clearTimeout(timer);
-    }
-
-  };
-
-  const touchEnd = () => {
-
-    clearTimeout(timer);
-
-    if (longPressed) {
+      const y =
+        e.touches[0]
+          .clientY;
 
       if (
-        video === activeVideo
+        Math.abs(
+          y - startY
+        ) > 25
       ) {
-        video.play()
-          .catch(() => {});
+        clearTimeout(
+          timer
+        );
       }
 
-    }
+    };
 
-  };
+  const touchEnd =
+    () => {
+
+      clearTimeout(
+        timer
+      );
+
+      if (
+        longPressed
+      ) {
+
+        if (
+          video ===
+          activeVideo
+        ) {
+          video.play()
+            .catch(() => {});
+        }
+
+      }
+
+    };
 
   video.addEventListener(
     "touchstart",
     touchStart,
-    { passive:true }
+    {
+      passive:true
+    }
   );
 
   video.addEventListener(
     "touchmove",
     touchMove,
-    { passive:true }
+    {
+      passive:true
+    }
   );
 
   video.addEventListener(
     "touchend",
     touchEnd,
-    { passive:true }
+    {
+      passive:true
+    }
   );
 
   video.addEventListener(
     "touchcancel",
     touchEnd,
-    { passive:true }
+    {
+      passive:true
+    }
   );
 
   video.addEventListener(
     "mousedown",
     () => {
+
       if (
-        video === activeVideo
+        video ===
+        activeVideo
       ) {
         video.pause();
       }
+
     }
   );
 
   video.addEventListener(
     "mouseup",
     () => {
+
       if (
-        video === activeVideo
+        video ===
+        activeVideo
       ) {
         video.play()
           .catch(() => {});
       }
+
     }
   );
 
   video.addEventListener(
     "contextmenu",
-    e =>
-      e.preventDefault()
+    e => {
+      e.preventDefault();
+    }
   );
 
 });
@@ -583,19 +725,22 @@ window.addEventListener(
 
     const params =
       new URLSearchParams(
-        window.location.search
+        window.location
+          .search
       );
 
     const videoNumber =
       parseInt(
-        params.get("video")
+        params.get(
+          "video"
+        )
       );
 
     if (
       videoNumber &&
       videoNumber >= 1 &&
       videoNumber <=
-      videos.length
+        videos.length
     ) {
 
       const target =
@@ -613,21 +758,24 @@ window.addEventListener(
         block:"start"
       });
 
-      setTimeout(() => {
+      setTimeout(
+        () => {
 
-        setActiveVideo(
-          target
-        );
-
-        window.history
-          .replaceState(
-            {},
-            "",
-            window.location
-              .pathname
+          setActiveVideo(
+            target
           );
 
-      }, 180);
+          window.history
+            .replaceState(
+              {},
+              "",
+              window.location
+                .pathname
+            );
+
+        },
+        180
+      );
 
     } else {
 
