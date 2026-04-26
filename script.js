@@ -1,27 +1,48 @@
-// REPLACE your current script.js with this version
+// script.js
 
 const feed = document.getElementById("feed");
 
-/* -----------------------------
+/* -------------------------
    GLOBAL STATE
------------------------------ */
+------------------------- */
 let globalMuted = true;
 let activeVideo = null;
 
-/* -----------------------------
+const emojiList = [
+  "❤️",
+  "😘",
+  "😍",
+  "😂",
+  "🥺",
+  "🔥"
+];
+
+/* -------------------------
    BUILD REELS
------------------------------ */
+------------------------- */
 reels.forEach((item, index) => {
 
   const reel = document.createElement("section");
   reel.className = "reel";
 
   reel.innerHTML = `
-    <div class="topBadge">For Meri Jaan Ashu ❤️</div>
+    <div class="topBadge">For My Ashu ❤️</div>
 
-    <button class="soundBtn">🔇</button>
+    <button class="soundBtn" type="button">🔇</button>
 
-    <button class="reactBtn" data-id="${index}">
+    <button
+      class="shareBtn"
+      type="button"
+      data-id="${index}"
+    >
+      💬
+    </button>
+
+    <button
+      class="reactBtn"
+      type="button"
+      data-id="${index}"
+    >
       ❤️
     </button>
 
@@ -34,7 +55,10 @@ reels.forEach((item, index) => {
       controlslist="nodownload noplaybackrate nofullscreen"
       disablepictureinpicture
     >
-      <source src="${item.file}" type="video/mp4">
+      <source
+        src="${item.file}"
+        type="video/mp4"
+      >
     </video>
 
     <div class="overlay">
@@ -52,33 +76,51 @@ reels.forEach((item, index) => {
 
 });
 
-const videos = document.querySelectorAll("video");
-const buttons = document.querySelectorAll(".soundBtn");
-const reactButtons = document.querySelectorAll(".reactBtn");
+/* -------------------------
+   DOM SELECTORS
+------------------------- */
+const videos =
+  document.querySelectorAll("video");
 
-/* -----------------------------
+const soundButtons =
+  document.querySelectorAll(".soundBtn");
+
+const shareButtons =
+  document.querySelectorAll(".shareBtn");
+
+const reactButtons =
+  document.querySelectorAll(".reactBtn");
+
+/* -------------------------
    HELPERS
------------------------------ */
+------------------------- */
 
-function updateButtons() {
-  buttons.forEach(btn => {
-    btn.textContent = globalMuted ? "🔇" : "🔊";
+function updateSoundButtons() {
+  soundButtons.forEach(btn => {
+    btn.textContent =
+      globalMuted ? "🔇" : "🔊";
   });
 }
 
 function stopAllExcept(video) {
+
   videos.forEach(v => {
+
     if (v === video) return;
 
     v.pause();
     v.currentTime = 0;
     v.muted = true;
+
   });
+
 }
 
 function preloadNext(video) {
+
   const nextReel =
-    video.closest(".reel").nextElementSibling;
+    video.closest(".reel")
+    ?.nextElementSibling;
 
   if (!nextReel) return;
 
@@ -88,9 +130,11 @@ function preloadNext(video) {
   if (nextVideo) {
     nextVideo.preload = "auto";
   }
+
 }
 
 function setActiveVideo(video) {
+
   if (!video) return;
 
   activeVideo = video;
@@ -103,10 +147,11 @@ function setActiveVideo(video) {
 
   preloadNext(video);
 
-  updateButtons();
+  updateSoundButtons();
 }
 
 function getMostVisibleVideo() {
+
   let best = null;
   let maxVisible = 0;
 
@@ -119,7 +164,10 @@ function getMostVisibleVideo() {
       Math.max(rect.top, 0);
 
     const bottom =
-      Math.min(rect.bottom, window.innerHeight);
+      Math.min(
+        rect.bottom,
+        window.innerHeight
+      );
 
     const visible =
       Math.max(0, bottom - top);
@@ -134,42 +182,130 @@ function getMostVisibleVideo() {
   return best;
 }
 
-/* -----------------------------
-   REACTION STORAGE
------------------------------ */
+function removeHint() {
+  const hint =
+    document.querySelector(".tapHint");
 
-function loadReactions() {
-  reactButtons.forEach(btn => {
-    const id = btn.dataset.id;
-
-    if (
-      localStorage.getItem(
-        "liked_" + id
-      ) === "true"
-    ) {
-      btn.classList.add("liked");
-    }
-  });
+  if (hint) hint.remove();
 }
 
-function burstHeart(btn) {
+/* -------------------------
+   REACTIONS
+------------------------- */
 
-  const heart =
+function burstEmoji(reel, emoji) {
+
+  const pop =
     document.createElement("div");
 
-  heart.className = "heartBurst";
-  heart.textContent = "❤️";
+  pop.className = "emojiBurst";
+  pop.textContent = emoji;
 
-  btn.parentElement.appendChild(heart);
+  reel.appendChild(pop);
 
   setTimeout(() => {
-    heart.remove();
+    pop.remove();
   }, 800);
 }
 
-/* -----------------------------
-   SCROLL ACTIVE REEL
------------------------------ */
+function buildEmojiTrays() {
+
+  reactButtons.forEach(btn => {
+
+    const reel =
+      btn.closest(".reel");
+
+    const tray =
+      document.createElement("div");
+
+    tray.className = "emojiTray";
+
+    emojiList.forEach(emoji => {
+
+      const option =
+        document.createElement("button");
+
+      option.type = "button";
+      option.className =
+        "emojiOption";
+
+      option.textContent =
+        emoji;
+
+      option.addEventListener(
+        "click",
+        e => {
+
+          e.stopPropagation();
+
+          const id =
+            btn.dataset.id;
+
+          localStorage.setItem(
+            "liked_" + id,
+            emoji
+          );
+
+          btn.textContent =
+            emoji;
+
+          tray.classList.remove(
+            "show"
+          );
+
+          burstEmoji(
+            reel,
+            emoji
+          );
+
+        }
+      );
+
+      tray.appendChild(option);
+
+    });
+
+    reel.appendChild(tray);
+
+  });
+
+}
+
+function loadReactions() {
+
+  reactButtons.forEach(btn => {
+
+    const id =
+      btn.dataset.id;
+
+    const saved =
+      localStorage.getItem(
+        "liked_" + id
+      );
+
+    if (saved) {
+      btn.textContent = saved;
+    }
+
+  });
+
+}
+
+function closeAllTrays() {
+
+  document
+    .querySelectorAll(".emojiTray")
+    .forEach(tray => {
+      tray.classList.remove(
+        "show"
+      );
+    });
+
+}
+
+/* -------------------------
+   SCROLL HANDLER
+------------------------- */
 
 let scrollTimer = null;
 
@@ -178,6 +314,8 @@ feed.addEventListener("scroll", () => {
   if (activeVideo) {
     activeVideo.pause();
   }
+
+  closeAllTrays();
 
   clearTimeout(scrollTimer);
 
@@ -194,76 +332,128 @@ feed.addEventListener("scroll", () => {
 
 });
 
-/* -----------------------------
+/* -------------------------
    SOUND BUTTON
------------------------------ */
+------------------------- */
 
-buttons.forEach(btn => {
+soundButtons.forEach(btn => {
 
-  btn.addEventListener("click", e => {
+  btn.addEventListener(
+    "click",
+    e => {
 
-    e.stopPropagation();
+      e.stopPropagation();
 
-    globalMuted = !globalMuted;
+      globalMuted =
+        !globalMuted;
 
-    if (activeVideo) {
-      activeVideo.muted = globalMuted;
-      activeVideo.play().catch(() => {});
+      if (activeVideo) {
+
+        activeVideo.muted =
+          globalMuted;
+
+        activeVideo.play()
+          .catch(() => {});
+
+      }
+
+      updateSoundButtons();
+
+      removeHint();
+
     }
-
-    updateButtons();
-
-    const hint =
-      document.querySelector(".tapHint");
-
-    if (hint) hint.remove();
-
-  });
+  );
 
 });
 
-/* -----------------------------
-   REACTION BUTTON
------------------------------ */
+/* -------------------------
+   SHARE BUTTON
+------------------------- */
+
+shareButtons.forEach(btn => {
+
+  btn.addEventListener(
+    "click",
+    e => {
+
+      e.stopPropagation();
+
+      const id =
+        Number(
+          btn.dataset.id
+        ) + 1;
+
+      const reelLink =
+        window.location.origin +
+        window.location.pathname +
+        "?video=" + id;
+
+      const text =
+        reelLink;
+
+      const url =
+        "https://wa.me/918797204760?text=" +
+        encodeURIComponent(text);
+
+      window.open(
+        url,
+        "_blank"
+      );
+
+    }
+  );
+
+});
+
+/* -------------------------
+   REACT BUTTON
+------------------------- */
 
 reactButtons.forEach(btn => {
 
-  btn.addEventListener("click", e => {
+  btn.addEventListener(
+    "click",
+    e => {
 
-    e.stopPropagation();
+      e.stopPropagation();
 
-    const id = btn.dataset.id;
+      const reel =
+        btn.closest(".reel");
 
-    const liked =
-      btn.classList.contains("liked");
+      const tray =
+        reel.querySelector(
+          ".emojiTray"
+        );
 
-    if (liked) {
-      btn.classList.remove("liked");
+      const isOpen =
+        tray.classList.contains(
+          "show"
+        );
 
-      localStorage.setItem(
-        "liked_" + id,
-        "false"
-      );
+      closeAllTrays();
 
-    } else {
+      if (!isOpen) {
+        tray.classList.add(
+          "show"
+        );
+      }
 
-      btn.classList.add("liked");
-
-      localStorage.setItem(
-        "liked_" + id,
-        "true"
-      );
-
-      burstHeart(btn);
     }
-
-  });
+  );
 
 });
 
-/* -----------------------------
+/* close trays when tapping outside */
+document.addEventListener(
+  "click",
+  () => {
+    closeAllTrays();
+  }
+);
+
+/* -------------------------
    LONG PRESS PAUSE
------------------------------ */
+------------------------- */
 
 videos.forEach(video => {
 
@@ -271,7 +461,7 @@ videos.forEach(video => {
   let longPressed = false;
   let startY = 0;
 
-  const touchStart = (e) => {
+  const touchStart = e => {
 
     longPressed = false;
 
@@ -282,7 +472,9 @@ videos.forEach(video => {
 
       longPressed = true;
 
-      if (video === activeVideo) {
+      if (
+        video === activeVideo
+      ) {
         video.pause();
       }
 
@@ -290,12 +482,16 @@ videos.forEach(video => {
 
   };
 
-  const touchMove = (e) => {
+  const touchMove = e => {
 
     const y =
       e.touches[0].clientY;
 
-    if (Math.abs(y - startY) > 25) {
+    if (
+      Math.abs(
+        y - startY
+      ) > 25
+    ) {
       clearTimeout(timer);
     }
 
@@ -306,9 +502,14 @@ videos.forEach(video => {
     clearTimeout(timer);
 
     if (longPressed) {
-      if (video === activeVideo) {
-        video.play().catch(() => {});
+
+      if (
+        video === activeVideo
+      ) {
+        video.play()
+          .catch(() => {});
       }
+
     }
 
   };
@@ -340,7 +541,9 @@ videos.forEach(video => {
   video.addEventListener(
     "mousedown",
     () => {
-      if (video === activeVideo) {
+      if (
+        video === activeVideo
+      ) {
         video.pause();
       }
     }
@@ -349,29 +552,92 @@ videos.forEach(video => {
   video.addEventListener(
     "mouseup",
     () => {
-      if (video === activeVideo) {
-        video.play().catch(() => {});
+      if (
+        video === activeVideo
+      ) {
+        video.play()
+          .catch(() => {});
       }
     }
   );
 
   video.addEventListener(
     "contextmenu",
-    e => e.preventDefault()
+    e =>
+      e.preventDefault()
   );
 
 });
 
-/* -----------------------------
-   START
------------------------------ */
+/* -------------------------
+   STARTUP
+------------------------- */
 
-window.addEventListener("load", () => {
+window.addEventListener(
+  "load",
+  () => {
 
-  loadReactions();
+    buildEmojiTrays();
 
-  if (videos[0]) {
-    setActiveVideo(videos[0]);
+    loadReactions();
+
+    const params =
+      new URLSearchParams(
+        window.location.search
+      );
+
+    const videoNumber =
+      parseInt(
+        params.get("video")
+      );
+
+    if (
+      videoNumber &&
+      videoNumber >= 1 &&
+      videoNumber <=
+      videos.length
+    ) {
+
+      const target =
+        videos[
+          videoNumber - 1
+        ];
+
+      const reel =
+        target.closest(
+          ".reel"
+        );
+
+      reel.scrollIntoView({
+        behavior:"auto",
+        block:"start"
+      });
+
+      setTimeout(() => {
+
+        setActiveVideo(
+          target
+        );
+
+        window.history
+          .replaceState(
+            {},
+            "",
+            window.location
+              .pathname
+          );
+
+      }, 180);
+
+    } else {
+
+      if (videos[0]) {
+        setActiveVideo(
+          videos[0]
+        );
+      }
+
+    }
+
   }
-
-});
+);
