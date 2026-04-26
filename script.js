@@ -1,4 +1,4 @@
-// script.js
+// REPLACE your current script.js with this version
 
 const feed = document.getElementById("feed");
 
@@ -20,6 +20,10 @@ reels.forEach((item, index) => {
     <div class="topBadge">For Meri Jaan Ashu ❤️</div>
 
     <button class="soundBtn">🔇</button>
+
+    <button class="reactBtn" data-id="${index}">
+      ❤️
+    </button>
 
     <video
       muted
@@ -50,6 +54,7 @@ reels.forEach((item, index) => {
 
 const videos = document.querySelectorAll("video");
 const buttons = document.querySelectorAll(".soundBtn");
+const reactButtons = document.querySelectorAll(".reactBtn");
 
 /* -----------------------------
    HELPERS
@@ -63,13 +68,11 @@ function updateButtons() {
 
 function stopAllExcept(video) {
   videos.forEach(v => {
-
     if (v === video) return;
 
     v.pause();
     v.currentTime = 0;
     v.muted = true;
-
   });
 }
 
@@ -88,7 +91,6 @@ function preloadNext(video) {
 }
 
 function setActiveVideo(video) {
-
   if (!video) return;
 
   activeVideo = video;
@@ -105,7 +107,6 @@ function setActiveVideo(video) {
 }
 
 function getMostVisibleVideo() {
-
   let best = null;
   let maxVisible = 0;
 
@@ -118,10 +119,7 @@ function getMostVisibleVideo() {
       Math.max(rect.top, 0);
 
     const bottom =
-      Math.min(
-        rect.bottom,
-        window.innerHeight
-      );
+      Math.min(rect.bottom, window.innerHeight);
 
     const visible =
       Math.max(0, bottom - top);
@@ -137,6 +135,39 @@ function getMostVisibleVideo() {
 }
 
 /* -----------------------------
+   REACTION STORAGE
+----------------------------- */
+
+function loadReactions() {
+  reactButtons.forEach(btn => {
+    const id = btn.dataset.id;
+
+    if (
+      localStorage.getItem(
+        "liked_" + id
+      ) === "true"
+    ) {
+      btn.classList.add("liked");
+    }
+  });
+}
+
+function burstHeart(btn) {
+
+  const heart =
+    document.createElement("div");
+
+  heart.className = "heartBurst";
+  heart.textContent = "❤️";
+
+  btn.parentElement.appendChild(heart);
+
+  setTimeout(() => {
+    heart.remove();
+  }, 800);
+}
+
+/* -----------------------------
    SCROLL ACTIVE REEL
 ----------------------------- */
 
@@ -144,7 +175,6 @@ let scrollTimer = null;
 
 feed.addEventListener("scroll", () => {
 
-  /* Immediately pause old reel while moving */
   if (activeVideo) {
     activeVideo.pause();
   }
@@ -187,6 +217,45 @@ buttons.forEach(btn => {
       document.querySelector(".tapHint");
 
     if (hint) hint.remove();
+
+  });
+
+});
+
+/* -----------------------------
+   REACTION BUTTON
+----------------------------- */
+
+reactButtons.forEach(btn => {
+
+  btn.addEventListener("click", e => {
+
+    e.stopPropagation();
+
+    const id = btn.dataset.id;
+
+    const liked =
+      btn.classList.contains("liked");
+
+    if (liked) {
+      btn.classList.remove("liked");
+
+      localStorage.setItem(
+        "liked_" + id,
+        "false"
+      );
+
+    } else {
+
+      btn.classList.add("liked");
+
+      localStorage.setItem(
+        "liked_" + id,
+        "true"
+      );
+
+      burstHeart(btn);
+    }
 
   });
 
@@ -237,16 +306,13 @@ videos.forEach(video => {
     clearTimeout(timer);
 
     if (longPressed) {
-
       if (video === activeVideo) {
         video.play().catch(() => {});
       }
-
     }
 
   };
 
-  /* MOBILE */
   video.addEventListener(
     "touchstart",
     touchStart,
@@ -271,7 +337,6 @@ videos.forEach(video => {
     { passive:true }
   );
 
-  /* DESKTOP HOLD */
   video.addEventListener(
     "mousedown",
     () => {
@@ -290,7 +355,6 @@ videos.forEach(video => {
     }
   );
 
-  /* BLOCK MENU */
   video.addEventListener(
     "contextmenu",
     e => e.preventDefault()
@@ -299,10 +363,12 @@ videos.forEach(video => {
 });
 
 /* -----------------------------
-   FIRST PLAY
+   START
 ----------------------------- */
 
 window.addEventListener("load", () => {
+
+  loadReactions();
 
   if (videos[0]) {
     setActiveVideo(videos[0]);
