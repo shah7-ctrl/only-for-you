@@ -492,7 +492,7 @@ shareButtons.forEach(btn => {
         id;
 
       const text =
-        reelLink;
+        reelLink + "\n\n";
 
       const url =
         "https://wa.me/918797204760?text=" +
